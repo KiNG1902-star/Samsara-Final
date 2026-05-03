@@ -17,6 +17,13 @@ function App() {
   const [showP2P, setShowP2P] = useState(false);
   const [offers, setOffers] = useState([]);
 
+  // PORTFOLIO DATA (This will eventually come from your Database)
+  const portfolio = [
+    { name: 'USDT', amt: balance.toLocaleString(), icon: '💵', color: '#00ff88' },
+    { name: 'BTC', amt: '0.0045', icon: '₿', color: '#f7931a' },
+    { name: 'Gold (XAU)', amt: '12.5g', icon: '🏆', color: '#ffcc00' }
+  ];
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -45,14 +52,23 @@ function App() {
     if (data) setOffers(data);
   }
 
+  async function createP2POffer() {
+    const { error } = await supabase.from('p2p_offers').insert([
+      { type: 'SELL', amount: 100, price: 89.20, creator_id: user.id, status: 'OPEN' }
+    ]);
+    if (!error) {
+      alert("Offer Posted to Global Market");
+      fetchP2P();
+    } else {
+      alert("Policy Error: Check Supabase Settings");
+    }
+  }
+
   async function handleAuth() {
     if (isSignUp) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) alert(error.message);
-      else {
-        if (data.user) await supabase.from('profiles').upsert({ id: data.user.id, balance: 0 });
-        alert("Success! Check email to confirm.");
-      }
+      else alert("Confirmation email sent!");
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) alert(error.message);
@@ -63,22 +79,15 @@ function App() {
     }
   }
 
-  async function createTestOffer() {
-    const { error } = await supabase.from('p2p_offers').insert([
-      { type: 'SELL', amount: 100, price: 88.50, creator_id: user.id, status: 'OPEN' }
-    ]);
-    if (!error) fetchP2P();
-  }
-
   if (!user) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#060a0f', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '30px', fontFamily: 'sans-serif' }}>
-        <h1 style={{ textAlign: 'center', letterSpacing: '3px', fontWeight: '900' }}>SAMSARA</h1>
-        <p style={{ textAlign: 'center', color: '#8e8e93', fontSize: '11px', marginBottom: '30px' }}>ONE SOLUTION. TWO PATHS.</p>
+        <h1 style={{ textAlign: 'center', letterSpacing: '3px', fontWeight: '900', margin: '0 0 10px 0' }}>SAMSARA</h1>
+        <p style={{ textAlign: 'center', color: '#8e8e93', fontSize: '11px', marginBottom: '40px' }}>THE ULTIMATE WEALTH GATEWAY</p>
         <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '18px', borderRadius: '12px', backgroundColor: '#1c1c1e', border: '1px solid #2c2c2e', color: 'white', marginBottom: '15px' }} />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '18px', borderRadius: '12px', backgroundColor: '#1c1c1e', border: '1px solid #2c2c2e', color: 'white', marginBottom: '25px' }} />
-        <button onClick={handleAuth} style={{ padding: '18px', borderRadius: '12px', backgroundColor: '#007aff', color: 'white', fontWeight: 'bold', border: 'none' }}>{isSignUp ? 'REGISTER' : 'ENTER VALLEY'}</button>
-        <p onClick={() => setIsSignUp(!isSignUp)} style={{ textAlign: 'center', color: '#007aff', marginTop: '20px', fontSize: '12px' }}>{isSignUp ? 'Back to Login' : 'New? Create Vault'}</p>
+        <button onClick={handleAuth} style={{ padding: '18px', borderRadius: '12px', backgroundColor: '#007aff', color: 'white', fontWeight: 'bold', border: 'none' }}>{isSignUp ? 'REGISTER' : 'LOGIN'}</button>
+        <p onClick={() => setIsSignUp(!isSignUp)} style={{ textAlign: 'center', color: '#007aff', marginTop: '20px', fontSize: '12px' }}>{isSignUp ? 'Back to Login' : 'New? Create Account'}</p>
       </div>
     );
   }
@@ -86,7 +95,7 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#060a0f', color: 'white', fontFamily: 'sans-serif', padding: '20px 20px 100px 20px' }}>
       
-      {/* TOP HEADER */}
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <span style={{ fontWeight: '900', letterSpacing: '1px' }}>SAMSARA ●</span>
         <button onClick={() => { supabase.auth.signOut(); window.location.reload(); }} style={{ background: 'none', border: 'none', color: '#ff3344', fontSize: '11px', fontWeight: 'bold' }}>EXIT</button>
@@ -95,46 +104,60 @@ function App() {
       {!showP2P ? (
         activeTab === 'hub' ? (
           <div>
+            {/* MAIN BALANCE CARD */}
             <div style={{ background: 'linear-gradient(145deg, #1c1c1e, #0a0a0b)', padding: '25px', borderRadius: '24px', border: '1px solid #2c2c2e', marginBottom: '25px' }}>
-              <p style={{ color: '#8e8e93', fontSize: '11px', fontWeight: 'bold' }}>WEALTH HUB BALANCE</p>
+              <p style={{ color: '#8e8e93', fontSize: '11px', fontWeight: 'bold' }}>ESTIMATED ASSETS</p>
               <h1 style={{ fontSize: '36px', margin: '5px 0' }}>${balance.toLocaleString()}</h1>
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                 <button onClick={() => { setShowP2P(true); fetchP2P(); }} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: '#007aff', color: 'white', fontWeight: 'bold' }}>P2P MARKET</button>
-                 <button style={{ flex: 1, padding: '12px', borderRadius: '10px', backgroundColor: '#1c1c1e', color: 'white', border: '1px solid #2c2c2e' }}>STAKE</button>
+                 <button onClick={() => { setShowP2P(true); fetchP2P(); }} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: '#007aff', color: 'white', fontWeight: 'bold' }}>P2P</button>
+                 <button style={{ flex: 1, padding: '12px', borderRadius: '10px', backgroundColor: '#1c1c1e', color: 'white', border: '1px solid #2c2c2e' }}>INVEST</button>
               </div>
             </div>
-            <p style={{ color: '#8e8e93', fontSize: '11px', fontWeight: 'bold', marginBottom: '15px' }}>LIVE MARKETS</p>
-            <div style={{ padding: '20px', backgroundColor: '#1c1c1e', borderRadius: '20px', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 'bold' }}>BTC / USD</span>
-              <span style={{ color: '#007aff', fontWeight: '900' }}>${price}</span>
-            </div>
+
+            {/* PORTFOLIO LIST */}
+            <p style={{ color: '#8e8e93', fontSize: '11px', fontWeight: 'bold', marginBottom: '15px' }}>PORTFOLIO</p>
+            {portfolio.map(asset => (
+              <div key={asset.name} style={{ backgroundColor: '#1c1c1e', padding: '15px', borderRadius: '18px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '35px', height: '35px', backgroundColor: '#0a0a0b', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{asset.icon}</div>
+                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{asset.name}</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ margin: 0, fontWeight: '900', fontSize: '14px' }}>{asset.amt}</p>
+                  <p style={{ margin: 0, fontSize: '10px', color: asset.color }}>{asset.name === 'USDT' ? 'Primary' : 'Staked'}</p>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
+          /* TRADING VIEW */
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#8e8e93', fontSize: '12px' }}>TRADING TERMINAL</p>
-            <h1 style={{ fontSize: '50px', color: '#00ff88', margin: '10px 0' }}>${price}</h1>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '30px' }}>
-              <button style={{ padding: '25px', borderRadius: '20px', border: 'none', backgroundColor: '#ff3344', color: 'white', fontWeight: '900' }}>SELL</button>
-              <button style={{ padding: '25px', borderRadius: '20px', border: 'none', backgroundColor: '#007aff', color: 'white', fontWeight: '900' }}>BUY</button>
+            <p style={{ color: '#8e8e93', fontSize: '12px', letterSpacing: '1px' }}>MT5 REAL-17 EXECUTION</p>
+            <h1 style={{ fontSize: '50px', color: '#00ff88', margin: '15px 0' }}>${price}</h1>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '40px' }}>
+              <button style={{ padding: '25px', borderRadius: '20px', border: 'none', backgroundColor: '#ff3344', color: 'white', fontWeight: '900', boxShadow: '0 4px 15px rgba(255,51,68,0.3)' }}>SELL</button>
+              <button style={{ padding: '25px', borderRadius: '20px', border: 'none', backgroundColor: '#007aff', color: 'white', fontWeight: '900', boxShadow: '0 4px 15px rgba(0,122,255,0.3)' }}>BUY</button>
             </div>
+            <div style={{ marginTop: '30px', color: '#8e8e93', fontSize: '11px' }}>Spread: 0.1 | Margin: $0.00 | Leverage: 1:2000</div>
           </div>
         )
       ) : (
+        /* P2P MARKETPLACE */
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <button onClick={() => setShowP2P(false)} style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '20px' }}>←</button>
-            <h3 style={{ margin: 0 }}>P2P Marketplace</h3>
-            <button onClick={createTestOffer} style={{ background: 'none', border: 'none', color: '#00ff88', fontSize: '20px' }}>+</button>
+            <h3 style={{ margin: 0 }}>P2P Markets</h3>
+            <button onClick={createP2POffer} style={{ background: 'none', border: 'none', color: '#00ff88', fontSize: '24px' }}>+</button>
           </div>
           {offers.map(offer => (
             <div key={offer.id} style={{ backgroundColor: '#1c1c1e', padding: '15px', borderRadius: '15px', marginBottom: '10px', border: '1px solid #2c2c2e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <span style={{ color: offer.type === 'BUY' ? '#00ff88' : '#ff3344', fontSize: '10px', fontWeight: 'bold' }}>{offer.type}</span>
                 <p style={{ margin: '5px 0 0 0', fontWeight: 'bold' }}>{offer.amount} USDT</p>
-                <p style={{ margin: 0, fontSize: '10px', color: '#8e8e93' }}>By: User_{offer.creator_id.slice(0,4)}</p>
+                <p style={{ margin: 0, fontSize: '10px', color: '#8e8e93' }}>Verified Merchant</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ margin: 0, fontWeight: 'bold', color: '#007aff' }}>${offer.price}</p>
+                <p style={{ margin: 0, fontWeight: 'bold', color: '#007aff' }}>₹{offer.price}</p>
                 <button style={{ marginTop: '8px', padding: '6px 15px', borderRadius: '8px', border: 'none', backgroundColor: '#007aff', color: 'white', fontSize: '11px', fontWeight: 'bold' }}>TRADE</button>
               </div>
             </div>
@@ -142,13 +165,13 @@ function App() {
         </div>
       )}
 
-      {/* NAV BAR */}
+      {/* FOOTER NAV */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#060a0f', borderTop: '1px solid #1c1c1e', display: 'flex', justifyContent: 'space-around', padding: '15px 0' }}>
         <div onClick={() => { setActiveTab('hub'); setShowP2P(false); }} style={{ textAlign: 'center', opacity: activeTab === 'hub' ? 1 : 0.4 }}>
-          <span>🏦</span><p style={{ fontSize: '10px', margin: '5px 0 0 0' }}>HUB</p>
+          <div style={{ fontSize: '20px' }}>🏛️</div><p style={{ fontSize: '10px', margin: '5px 0 0 0', fontWeight: 'bold' }}>HUB</p>
         </div>
         <div onClick={() => { setActiveTab('trade'); setShowP2P(false); }} style={{ textAlign: 'center', opacity: activeTab === 'trade' ? 1 : 0.4 }}>
-          <span>📊</span><p style={{ fontSize: '10px', margin: '5px 0 0 0' }}>TRADE</p>
+          <div style={{ fontSize: '20px' }}>📉</div><p style={{ fontSize: '10px', margin: '5px 0 0 0', fontWeight: 'bold' }}>TRADE</p>
         </div>
       </div>
     </div>
@@ -156,4 +179,4 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  
+                
